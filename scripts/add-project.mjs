@@ -74,7 +74,13 @@ async function draftEntry(context) {
       },
       categories: {
         type: 'array',
-        description: '1 to 3 categories from the allowed set.',
+        description:
+          "Assign every category that reflects the project's primary focus (1-3). " +
+          'Software = traditional applications and web/app architecture (full-stack web apps, ' +
+          'REST/GraphQL APIs, backend services, frontends). AI / ML = the focus is machine learning, ' +
+          'LLMs, agents, or models. Data = the project centers on data processing, pipelines/ETL, ' +
+          'large-dataset fusion, or analytics. Do NOT tag Software just because there is code -- ' +
+          'reserve it for projects whose focus is application or web architecture.',
         items: { type: 'string', enum: CATEGORIES },
       },
     },
@@ -90,9 +96,12 @@ async function draftEntry(context) {
           role: 'system',
           content:
             'You write concise, outcome-focused portfolio entries for a software / AI developer. ' +
-            'Match a polished, editorial tone. Choose 3–5 specific tech tags and 1–3 categories ' +
-            'from the allowed set. Only state facts supported by the repo metadata and README; ' +
-            'never invent capabilities.',
+            'Match a polished, editorial tone. Choose 3-5 specific tech tags. ' +
+            "For categories, pick every one that fits the project's focus: " +
+            'Software for traditional web/app-architecture projects, AI / ML for ML / LLM / agent / ' +
+            'model projects, and Data for data-processing or pipeline projects. A project can span ' +
+            'several (e.g. a full-stack app with an AI feature is Software + AI / ML). ' +
+            'Only state facts supported by the repo metadata and README; never invent capabilities.',
         },
         { role: 'user', content: `Create a portfolio entry from this GitHub repo:\n\n${JSON.stringify(context, null, 2)}` },
       ],

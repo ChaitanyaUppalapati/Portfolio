@@ -58,9 +58,10 @@ function ProjectRow({ project, index }) {
 
 export default function Projects() {
   const [active, setActive] = useState('All')
-  const visible = projects.filter(
-    (p) => active === 'All' || (p.categories || []).includes(active),
-  )
+  const visible = projects
+    .filter((p) => active === 'All' || (p.categories || []).includes(active))
+    // Featured projects first; original order preserved within each group.
+    .sort((a, b) => (b.featured === true) - (a.featured === true))
 
   return (
     <section className="projects" id="projects">
@@ -88,14 +89,7 @@ export default function Projects() {
               className={`filter-tab ${active === f ? 'is-active' : ''}`}
               onClick={() => setActive(f)}
             >
-              <span>{f}</span>
-              {active === f && (
-                <motion.span
-                  layoutId="tab-pill"
-                  className="tab-pill"
-                  transition={{ type: 'spring', stiffness: 400, damping: 32 }}
-                />
-              )}
+              {f}
             </button>
           ))}
         </motion.div>

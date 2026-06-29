@@ -15,7 +15,7 @@ services:
     image: ${IMAGE:-ghcr.io/chaitanyauppalapati/portfolio}:latest
     container_name: portfolio
     ports:
-      - "80:80" # serve on the standard port → http://<pi-ip>
+      - "8081:80" # host 8081 → container nginx 80 → http://<pi-ip>:8081
     restart: unless-stopped
 
   watchtower:
