@@ -5,9 +5,9 @@ import Counter from './Counter.jsx'
 
 const stats = [
   { value: 3, suffix: '', label: 'Flagship builds' },
+  { value: 6, suffix: '+', label: 'Languages used' },
   { value: 13, suffix: '', label: 'Datasets fused' },
-  { value: 100, suffix: '%', label: 'Auditable cores' },
-  { value: 0, suffix: '', label: 'LLMs in the safety path' },
+  { value: 100, suffix: '%', label: 'End-to-end ownership' },
 ]
 
 export default function About() {
@@ -31,17 +31,17 @@ export default function About() {
           <motion.div className="about-text" variants={fadeUp}>
             <p>{profile.blurb}</p>
             <p>
-              Most of my work lives at the intersection of <strong>machine learning</strong> and{' '}
-              <strong>safety-critical engineering</strong> — multi-agent systems, RAG pipelines, and
-              predictive models for high-stakes domains like healthcare and disaster response. My
-              guiding principle is to keep language models at the edges and put a{' '}
-              <strong>deterministic, auditable core</strong> in charge of the decisions that matter.
+              On the <strong>software engineering</strong> side, I build full-stack applications and
+              backend services, designing REST APIs, modeling data in PostgreSQL, and wiring up the
+              systems that hold everything together. On the <strong>AI/ML</strong> side, I work on
+              multi-agent systems, RAG pipelines, and predictive models for high-stakes domains like
+              healthcare and disaster response.
             </p>
             <p>
-              I like building things end to end: the data and models, the services behind them, and
-              the interfaces that make them usable. Whether it's automating a digital task or ranking
-              ZIP codes by hurricane risk, I care about systems that are reliable, explainable, and
-              ready for the real world.
+              What ties it together is an engineering mindset: keep the architecture clean, keep
+              critical logic <strong>deterministic and auditable</strong>, and make sure the thing
+              actually works in the real world, whether that's a web app, a data pipeline, or a
+              model in production.
             </p>
           </motion.div>
 

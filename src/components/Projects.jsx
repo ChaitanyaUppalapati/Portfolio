@@ -1,13 +1,25 @@
-import { motion } from 'framer-motion'
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { projects } from '../data.js'
 import { GitHubIcon, ExternalIcon, ArrowIcon } from './icons.jsx'
 import { fadeUp, stagger, viewport } from '../motion.js'
+
+const FILTER_ORDER = ['All', 'Software', 'AI / ML', 'Data']
+const present = new Set(projects.flatMap((p) => p.categories || []))
+const filters = FILTER_ORDER.filter((f) => f === 'All' || present.has(f))
 
 function ProjectRow({ project, index }) {
   const primary = project.links.live || project.links.github || '#'
 
   return (
-    <motion.article className="project-row" variants={fadeUp}>
+    <motion.article
+      className="project-row"
+      layout
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.97 }}
+      transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+    >
       <span className="project-index">{String(index + 1).padStart(2, '0')}</span>
 
       <div className="project-body">
@@ -45,6 +57,11 @@ function ProjectRow({ project, index }) {
 }
 
 export default function Projects() {
+  const [active, setActive] = useState('All')
+  const visible = projects.filter(
+    (p) => active === 'All' || (p.categories || []).includes(active),
+  )
+
   return (
     <section className="projects" id="projects">
       <motion.div
@@ -61,11 +78,35 @@ export default function Projects() {
           Selected projects
         </motion.h2>
 
-        <div className="projects-list">
-          {projects.map((project, i) => (
-            <ProjectRow key={project.title} project={project} index={i} />
+        <motion.div className="filter-tabs" variants={fadeUp} role="tablist" aria-label="Filter projects">
+          {filters.map((f) => (
+            <button
+              key={f}
+              type="button"
+              role="tab"
+              aria-selected={active === f}
+              className={`filter-tab ${active === f ? 'is-active' : ''}`}
+              onClick={() => setActive(f)}
+            >
+              <span>{f}</span>
+              {active === f && (
+                <motion.span
+                  layoutId="tab-pill"
+                  className="tab-pill"
+                  transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                />
+              )}
+            </button>
           ))}
-        </div>
+        </motion.div>
+
+        <motion.div className="projects-list" layout>
+          <AnimatePresence mode="popLayout">
+            {visible.map((project, i) => (
+              <ProjectRow key={project.title} project={project} index={i} />
+            ))}
+          </AnimatePresence>
+        </motion.div>
       </motion.div>
     </section>
   )

@@ -6,12 +6,14 @@ import ParticleField from './ParticleField.jsx'
 import Magnetic from './Magnetic.jsx'
 
 const keywords = [
-  'Safety-Critical AI',
+  'Full-Stack Development',
+  'System Design',
   'Multi-Agent Systems',
-  'Deterministic Cores',
-  'RAG Pipelines',
+  'REST APIs',
+  'Machine Learning',
+  'Data Pipelines',
+  'RAG',
   'Auditable by Design',
-  'ML for High-Stakes Domains',
 ]
 
 // Animated headline: each word rises out of a clipping mask.

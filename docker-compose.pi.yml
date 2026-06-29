@@ -1,0 +1,28 @@
+# Pipeline 1 (Pi half) — run this ON the Raspberry Pi.
+#
+#   IMAGE=ghcr.io/<your-gh-username>/portfolio docker compose -f docker-compose.pi.yml up -d
+#
+# Pulls the prebuilt arm64 image from GHCR and serves it. Watchtower polls the
+# registry every 60s and automatically redeploys when CI pushes a new image —
+# so a `git push` on your laptop becomes a live update with no SSH.
+#
+# If the GHCR package is PRIVATE, run `docker login ghcr.io` on the Pi once; the
+# mounted ~/.docker/config.json lets Watchtower authenticate its pulls too.
+# If the package is PUBLIC, no login is needed.
+
+services:
+  portfolio:
+    image: ${IMAGE:-ghcr.io/chaitanyauppalapati/portfolio}:latest
+    container_name: portfolio
+    ports:
+      - "80:80" # serve on the standard port → http://<pi-ip>
+    restart: unless-stopped
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${HOME}/.docker/config.json:/config.json:ro
+    command: --interval 60 --cleanup portfolio
+    restart: unless-stopped

@@ -75,3 +75,55 @@ Because the output is a plain static bundle, you can also deploy `dist/` to any 
 docker tag portfolio:latest <registry>/<user>/portfolio:latest
 docker push <registry>/<user>/portfolio:latest
 ```
+
+---
+
+# Automation pipelines
+
+Two chained pipelines keep the site updated with minimal effort:
+
+```
+add-project (laptop)  →  git push  →  GitHub Actions builds arm64 → GHCR  →  Watchtower redeploys on the Pi
+        Pipeline 2                              Pipeline 1 (build)              Pipeline 1 (host)
+```
+
+## Pipeline 2 — add a project from a GitHub link (laptop)
+
+Turns a repo URL into a polished `projects.json` entry using the **OpenAI API**.
+
+```bash
+cp .env.example .env        # then put your OPENAI_API_KEY in it
+npm run add-project -- https://github.com/<owner>/<repo>
+```
+
+It fetches the repo's metadata + README from the GitHub API, asks OpenAI (Structured
+Outputs, default model `gpt-5.4-mini` — override with `OPENAI_MODEL`) to draft a
+**title, description, tags, and categories**, shows a preview for you to confirm, then
+appends the entry to [`src/projects.json`](src/projects.json). Review it and push:
+
+```bash
+git add src/projects.json && git commit -m "Add project: ..." && git push
+```
+
+That push triggers Pipeline 1. The `openai` SDK is a **devDependency** — it's used only
+by the CLI and is never bundled into the deployed app.
+
+## Pipeline 1 — build & host (GitHub Actions → GHCR → Raspberry Pi)
+
+**Build half** — [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) runs on every
+push to `main`: it cross-builds the `linux/arm64` image and pushes it to GHCR as
+`ghcr.io/<your-username>/portfolio:latest`. No secrets to configure — it uses the
+built-in `GITHUB_TOKEN`. (Make the GHCR package **public** under your repo's *Packages*
+settings so the Pi can pull without auth, or `docker login ghcr.io` on the Pi once.)
+
+**Host half** — on the Raspberry Pi, run the prebuilt image plus Watchtower:
+
+```bash
+# 64-bit Raspberry Pi OS with Docker installed
+IMAGE=ghcr.io/<your-username>/portfolio docker compose -f docker-compose.pi.yml up -d
+```
+
+[`docker-compose.pi.yml`](docker-compose.pi.yml) serves the site on port 80
+(`http://<pi-ip>`) and runs **Watchtower**, which polls GHCR every 60s and
+auto-redeploys when CI publishes a new image. End to end: a `git push` on your laptop
+becomes a live update on the Pi with no SSH and no build load on the Pi.

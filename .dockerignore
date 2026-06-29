@@ -6,6 +6,11 @@ dist
 Dockerfile
 .dockerignore
 docker-compose.yml
+docker-compose.pi.yml
+scripts
+.github
+.env
+.env.example
 .vscode
 .idea
 npm-debug.log*

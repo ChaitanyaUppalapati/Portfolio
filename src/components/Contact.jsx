@@ -20,7 +20,7 @@ export default function Contact() {
         <motion.h2 variants={fadeUp}>Let's build something together</motion.h2>
         <motion.p variants={fadeUp}>
           I'm currently open to new opportunities and collaborations. Whether you have a question or
-          just want to say hi, my inbox is always open — I'll do my best to get back to you.
+          just want to say hi, my inbox is always open, and I'll do my best to get back to you.
         </motion.p>
         <motion.div variants={fadeUp}>
           <Magnetic>
