@@ -76,5 +76,26 @@
       "live": null
     },
     "featured": true
+  },
+  {
+    "title": "LipSynth — lip-reading and lip-to-speech research pipeline",
+    "description": "Research repository for building datasets from video and running lip-reading / lip-to-speech experiments. Includes a dataset pipeline, experiment notebooks, and pretrained Stage 1 evaluation scripts with tracked benchmark artifacts.",
+    "categories": [
+      "AI / ML",
+      "Data",
+      "Software"
+    ],
+    "tags": [
+      "Python",
+      "Jupyter Notebook",
+      "data pipeline",
+      "video processing",
+      "evaluation"
+    ],
+    "links": {
+      "github": "https://github.com/ChaitanyaUppalapati/LipSynth",
+      "live": null
+    },
+    "featured": true
   }
 ]
