@@ -32,21 +32,15 @@ const MODEL = process.env.OPENAI_MODEL || 'gpt-5.4-mini'
 const CATEGORIES = ['Software', 'AI / ML', 'Data']
 const README_LIMIT = 8000
 
-const die = (msg) => {
-  console.error(`✖ ${msg}`)
-  process.exit(1)
+// A user-facing error: printed cleanly, no stack trace. Thrown instead of
+// process.exit() so Node tears down its handles gracefully (avoids a libuv
+// assertion on Windows when exiting mid-request).
+class CliError extends Error {}
+const fail = (msg) => {
+  throw new CliError(msg)
 }
 
-const url = process.argv[2]
-if (!url) die('Usage: npm run add-project -- <github-repo-url>')
-if (!process.env.OPENAI_API_KEY) die('OPENAI_API_KEY is not set (add it to .env or your environment).')
-
-const match = url.match(/github\.com\/([^/\s]+)\/([^/\s#?]+)/i)
-if (!match) die('That does not look like a GitHub repo URL.')
-const owner = match[1]
-const repo = match[2].replace(/\.git$/, '')
-
-async function gh(suffix, raw = false) {
+async function gh(owner, repo, suffix, raw = false) {
   const headers = {
     Accept: raw ? 'application/vnd.github.raw+json' : 'application/vnd.github+json',
     'User-Agent': 'portfolio-add-project',
@@ -56,111 +50,130 @@ async function gh(suffix, raw = false) {
   const res = await fetch(`https://api.github.com/repos/${owner}/${repo}${suffix}`, { headers })
   if (res.status === 404) {
     if (suffix === '/readme') return null // repos without a README are fine
-    die(`Repo ${owner}/${repo} not found (404). Is it private? Set GITHUB_TOKEN.`)
+    fail(`Repo ${owner}/${repo} not found (404). Check the URL — is it private? Set GITHUB_TOKEN.`)
   }
-  if (!res.ok) die(`GitHub API returned ${res.status} for ${suffix || '/'}.`)
+  if (!res.ok) fail(`GitHub API returned ${res.status} for ${suffix || '/'}.`)
   return raw ? res.text() : res.json()
 }
 
-console.log(`→ Fetching ${owner}/${repo} from GitHub …`)
-const meta = await gh('')
-const langs = await gh('/languages')
-const readmeRaw = await gh('/readme', true)
-
-const context = {
-  full_name: meta.full_name,
-  description: meta.description,
-  topics: meta.topics || [],
-  languages: Object.keys(langs || {}),
-  homepage: meta.homepage || null,
-  readme: (readmeRaw || '').slice(0, README_LIMIT),
-}
-
-const schema = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['title', 'description', 'tags', 'categories'],
-  properties: {
-    title: {
-      type: 'string',
-      description: 'Polished project title. Optionally "Name — short tagline".',
-    },
-    description: {
-      type: 'string',
-      description: 'Two sentences, outcome-focused, portfolio quality. No marketing fluff.',
-    },
-    tags: {
-      type: 'array',
-      description: '3 to 5 specific tech tags: languages, frameworks, or techniques.',
-      items: { type: 'string' },
-    },
-    categories: {
-      type: 'array',
-      description: '1 to 3 categories from the allowed set.',
-      items: { type: 'string', enum: CATEGORIES },
-    },
-  },
-}
-
-console.log(`→ Drafting entry with ${MODEL} …`)
-const client = new OpenAI()
-let data
-try {
-  const completion = await client.chat.completions.create({
-    model: MODEL,
-    messages: [
-      {
-        role: 'system',
-        content:
-          'You write concise, outcome-focused portfolio entries for a software / AI developer. ' +
-          'Match a polished, editorial tone. Choose 3–5 specific tech tags and 1–3 categories ' +
-          'from the allowed set. Only state facts supported by the repo metadata and README; ' +
-          'never invent capabilities.',
+async function draftEntry(context) {
+  const schema = {
+    type: 'object',
+    additionalProperties: false,
+    required: ['title', 'description', 'tags', 'categories'],
+    properties: {
+      title: { type: 'string', description: 'Polished project title. Optionally "Name — short tagline".' },
+      description: {
+        type: 'string',
+        description: 'Two sentences, outcome-focused, portfolio quality. No marketing fluff.',
       },
-      { role: 'user', content: `Create a portfolio entry from this GitHub repo:\n\n${JSON.stringify(context, null, 2)}` },
-    ],
-    response_format: { type: 'json_schema', json_schema: { name: 'project', strict: true, schema } },
-  })
-  data = JSON.parse(completion.choices[0].message.content)
-} catch (err) {
-  die(`OpenAI request failed: ${err.message}`)
+      tags: {
+        type: 'array',
+        description: '3 to 5 specific tech tags: languages, frameworks, or techniques.',
+        items: { type: 'string' },
+      },
+      categories: {
+        type: 'array',
+        description: '1 to 3 categories from the allowed set.',
+        items: { type: 'string', enum: CATEGORIES },
+      },
+    },
+  }
+
+  const client = new OpenAI()
+  let completion
+  try {
+    completion = await client.chat.completions.create({
+      model: MODEL,
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You write concise, outcome-focused portfolio entries for a software / AI developer. ' +
+            'Match a polished, editorial tone. Choose 3–5 specific tech tags and 1–3 categories ' +
+            'from the allowed set. Only state facts supported by the repo metadata and README; ' +
+            'never invent capabilities.',
+        },
+        { role: 'user', content: `Create a portfolio entry from this GitHub repo:\n\n${JSON.stringify(context, null, 2)}` },
+      ],
+      response_format: { type: 'json_schema', json_schema: { name: 'project', strict: true, schema } },
+    })
+  } catch (err) {
+    fail(`OpenAI request failed: ${err.message}`)
+  }
+  return JSON.parse(completion.choices[0].message.content)
 }
 
-const entry = {
-  title: data.title,
-  description: data.description,
-  categories: data.categories,
-  tags: data.tags,
-  links: { github: meta.html_url, live: meta.homepage || null },
-  featured: false,
+async function main() {
+  const url = process.argv[2]
+  if (!url) fail('Usage: npm run add-project -- <github-repo-url>')
+  if (!process.env.OPENAI_API_KEY) fail('OPENAI_API_KEY is not set (add it to .env or your environment).')
+
+  const match = url.match(/github\.com\/([^/\s]+)\/([^/\s#?]+)/i)
+  if (!match) fail('That does not look like a GitHub repo URL.')
+  const owner = match[1]
+  const repo = match[2].replace(/\.git$/, '')
+  if (owner.includes('<') || repo.includes('<')) {
+    fail('Replace <owner>/<repo> with a real repository, e.g. https://github.com/ChaitanyaUppalapati/LightHouse')
+  }
+
+  console.log(`→ Fetching ${owner}/${repo} from GitHub …`)
+  const meta = await gh(owner, repo, '')
+  const langs = await gh(owner, repo, '/languages')
+  const readmeRaw = await gh(owner, repo, '/readme', true)
+
+  const context = {
+    full_name: meta.full_name,
+    description: meta.description,
+    topics: meta.topics || [],
+    languages: Object.keys(langs || {}),
+    homepage: meta.homepage || null,
+    readme: (readmeRaw || '').slice(0, README_LIMIT),
+  }
+
+  console.log(`→ Drafting entry with ${MODEL} …`)
+  const data = await draftEntry(context)
+
+  const entry = {
+    title: data.title,
+    description: data.description,
+    categories: data.categories,
+    tags: data.tags,
+    links: { github: meta.html_url, live: meta.homepage || null },
+    featured: false,
+  }
+
+  console.log('\n── Preview ──')
+  console.log(`Title:       ${entry.title}`)
+  console.log(`Description: ${entry.description}`)
+  console.log(`Categories:  ${entry.categories.join(', ')}`)
+  console.log(`Tags:        ${entry.tags.join(', ')}`)
+  console.log(`GitHub:      ${entry.links.github}`)
+  console.log(`Live:        ${entry.links.live || '(none)'}`)
+  console.log('──────────')
+
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
+  const yes = (s) => ['y', 'yes'].includes(s.trim().toLowerCase())
+  try {
+    if (!yes(await rl.question('\nAdd this project? (y/N) '))) fail('Aborted — nothing written.')
+    entry.featured = yes(await rl.question('Mark as featured? (y/N) '))
+  } finally {
+    rl.close()
+  }
+
+  const projects = JSON.parse(fs.readFileSync(PROJECTS_PATH, 'utf8'))
+  if (projects.some((p) => p.links?.github === entry.links.github)) {
+    fail('A project with this GitHub link is already in projects.json.')
+  }
+  projects.push(entry)
+  fs.writeFileSync(PROJECTS_PATH, JSON.stringify(projects, null, 2) + '\n')
+
+  console.log(`\n✓ Appended to ${path.relative(process.cwd(), PROJECTS_PATH)}`)
+  console.log('Review it, then deploy by pushing:')
+  console.log(`  git add src/projects.json && git commit -m "Add project: ${entry.title}" && git push`)
 }
 
-console.log('\n── Preview ──')
-console.log(`Title:       ${entry.title}`)
-console.log(`Description: ${entry.description}`)
-console.log(`Categories:  ${entry.categories.join(', ')}`)
-console.log(`Tags:        ${entry.tags.join(', ')}`)
-console.log(`GitHub:      ${entry.links.github}`)
-console.log(`Live:        ${entry.links.live || '(none)'}`)
-console.log('──────────')
-
-const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
-const yes = (s) => ['y', 'yes'].includes(s.trim().toLowerCase())
-const confirm = await rl.question('\nAdd this project? (y/N) ')
-if (!yes(confirm)) {
-  rl.close()
-  die('Aborted — nothing written.')
-}
-entry.featured = yes(await rl.question('Mark as featured? (y/N) '))
-rl.close()
-
-const projects = JSON.parse(fs.readFileSync(PROJECTS_PATH, 'utf8'))
-if (projects.some((p) => p.links?.github === entry.links.github)) {
-  die('A project with this GitHub link is already in projects.json.')
-}
-projects.push(entry)
-fs.writeFileSync(PROJECTS_PATH, JSON.stringify(projects, null, 2) + '\n')
-
-console.log(`\n✓ Appended to ${path.relative(process.cwd(), PROJECTS_PATH)}`)
-console.log('Review it, then deploy by pushing:')
-console.log(`  git add src/projects.json && git commit -m "Add project: ${entry.title}" && git push`)
+main().catch((err) => {
+  console.error(err instanceof CliError ? `✖ ${err.message}` : err)
+  process.exitCode = 1
+})

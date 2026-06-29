@@ -2,8 +2,16 @@
   {
     "title": "Lighthouse: Multi-Agent Guardian System",
     "description": "A multi-agent guardian system that autonomously handles safe digital tasks for people with cognitive decline and escalates risky ones to family, gated by a deterministic safety layer.",
-    "categories": ["Software", "AI / ML"],
-    "tags": ["Python", "Multi-Agent Framework", "Browser Automation", "PostgreSQL"],
+    "categories": [
+      "Software",
+      "AI / ML"
+    ],
+    "tags": [
+      "Python",
+      "Multi-Agent Framework",
+      "Browser Automation",
+      "PostgreSQL"
+    ],
     "links": {
       "github": "https://github.com/ChaitanyaUppalapati/LightHouse",
       "live": null
@@ -13,8 +21,16 @@
   {
     "title": "OpenPill: Medication Safety Assistant",
     "description": "A medication-safety assistant that reads a pill bottle, checks for dangerous drug interactions through a deterministic, fully auditable safety core, and explains the risk in plain language, keeping language models at the edges and never in the safety decision.",
-    "categories": ["Software", "AI / ML"],
-    "tags": ["Python", "Multimodal LLM", "RAG (BM25 + Vector Search)", "PostgreSQL"],
+    "categories": [
+      "Software",
+      "AI / ML"
+    ],
+    "tags": [
+      "Python",
+      "Multimodal LLM",
+      "RAG (BM25 + Vector Search)",
+      "PostgreSQL"
+    ],
     "links": {
       "github": "https://github.com/ChaitanyaUppalapati/OpenPill",
       "live": null
@@ -24,12 +40,41 @@
   {
     "title": "Hurricane Food Relief Priority: Predictive ML for Disaster Response",
     "description": "A pre-landfall ML system that ranks ZIP codes by predicted hurricane damage and food fragility (fusing 13 federal datasets, audited for equity with Fairlearn and explained with SHAP) to help emergency managers target food relief before damage reports arrive.",
-    "categories": ["AI / ML", "Data"],
-    "tags": ["Python", "XGBoost", "SHAP", "Geospatial Analysis", "Streamlit"],
+    "categories": [
+      "AI / ML",
+      "Data"
+    ],
+    "tags": [
+      "Python",
+      "XGBoost",
+      "SHAP",
+      "Geospatial Analysis",
+      "Streamlit"
+    ],
     "links": {
       "github": "https://github.com/ChaitanyaUppalapati/hurricane-food-relief-ml",
       "live": null
     },
     "featured": false
+  },
+  {
+    "title": "Yelp Clone Fullstack — AI Restaurant Discovery Platform",
+    "description": "Built a full-stack restaurant discovery app with a React/Vite frontend and a FastAPI backend, including search, reviews, favorites, user profiles, and owner management flows. The platform adds an AI chat widget for restaurant recommendations and includes JWT auth, Swagger-documented APIs, and automated backend tests.",
+    "categories": [
+      "Software",
+      "AI / ML"
+    ],
+    "tags": [
+      "React",
+      "FastAPI",
+      "Python",
+      "JWT",
+      "LangGraph"
+    ],
+    "links": {
+      "github": "https://github.com/ChaitanyaUppalapati/yelp-clone-fullstack",
+      "live": null
+    },
+    "featured": true
   }
 ]

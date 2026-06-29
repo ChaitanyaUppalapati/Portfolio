@@ -21,6 +21,10 @@ services:
   watchtower:
     image: containrrr/watchtower
     container_name: watchtower
+    environment:
+      # containrrr/watchtower defaults to Docker API 1.25, which modern Engines
+      # reject. Pin a version the daemon accepts (its stated minimum is 1.40).
+      - DOCKER_API_VERSION=1.40
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${HOME}/.docker/config.json:/config.json:ro
